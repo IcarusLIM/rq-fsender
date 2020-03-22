@@ -1,0 +1,36 @@
+{
+    "name": "os-rq-fsender",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "ts-node src/app.ts",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Ghamster0/os-rq-fsender.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Ghamster0/os-rq-fsender/issues"
+    },
+    "homepage": "https://github.com/Ghamster0/os-rq-fsender#readme",
+    "dependencies": {
+        "koa": "^2.11.0",
+        "koa-body": "^4.1.1",
+        "koa-json": "^2.0.2",
+        "koa-router": "^8.0.8",
+        "log4js": "^6.1.2",
+        "redis": "^3.0.2"
+    },
+    "devDependencies": {
+        "@types/koa": "^2.11.2",
+        "@types/koa-json": "^2.0.18",
+        "@types/koa-router": "^7.4.0",
+        "@types/redis": "^2.8.16",
+        "ts-node": "^8.7.0",
+        "typescript": "^3.8.3"
+    }
+}
