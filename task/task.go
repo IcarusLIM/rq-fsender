@@ -3,6 +3,7 @@ package task
 import (
 	"bufio"
 	"fmt"
+	"io"
 
 	"github.com/Ghamster0/os-rq-fsender/sender"
 )
@@ -20,39 +21,67 @@ const (
 
 // Task TODO
 type Task struct {
-	SC       chan *sender.Feed
-	Receiver string
-	Files    []ReadOnlyFile
-	Status   map[ProcessStatus][]ReadOnlyFile
+	SC         *chan *sender.Feed
+	Receiver   string
+	Files      []PlainFile
+	Index      int
+	CurrReader VisableReader
 }
 
 // Run task
 func (t *Task) Run() {
-	metaFile := t.Files[0]
-	file, _ := metaFile.Open()
-	reader := bufio.NewReader(file)
+	t.Index = 0
+	processing := t.Files[t.Index]
+	t.CurrReader, _ = processing.Open()
+	reader := bufio.NewReader(t.CurrReader)
 	for {
 		line, _, err := reader.ReadLine()
 		if err != nil {
 			return
 		}
-		fmt.Print("extract line: ", line)
+		fmt.Print("Read line:" + string(line) + "\n")
 		req := sender.Request{
 			URL:    string(line),
 			Method: "GET",
 		}
-		t.SC <- &sender.Feed{
+		*t.SC <- &sender.Feed{
 			Receiver: t.Receiver,
 			Req:      req,
 		}
 	}
 }
 
-// TaskContainer TODO
-type TaskContainer struct {
+// Status of task
+func (t *Task) Status() (res Result) {
+	res["pedding"] = 1
+	currReader := t.CurrReader
+	size, _ := currReader.Size()
+	pos, _ := currReader.Seek(0, io.SeekCurrent)
+	res["process"] = Result{"size": size, "pos": pos}
+	return
+}
+
+// Container TODO
+type Container struct {
 	tasks map[string]Task
 }
 
-func (tc *TaskContainer) AddTask() {
+// NewContainer TODO
+func NewContainer() *Container {
+	tasks := make(map[string]Task)
+	return &Container{tasks: tasks}
+}
+
+// AddTask TODO
+func (tc *Container) AddTask(sc *chan *sender.Feed, taskID string, receiver string, files []PlainFile) {
+	task := Task{
+		SC:         sc,
+		Receiver:   receiver,
+		Files:      files,
+		Index:      0,
+		CurrReader: nil,
+	}
+	go task.Run()
+	tc.tasks[taskID] = task
 	return
 }

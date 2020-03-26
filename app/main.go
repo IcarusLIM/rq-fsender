@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	ctx := &ctx.ApplicationContext{}
+	app, _ := ctx.StartApplication()
 	r := gin.Default()
-	router.InitRouter(r, ctx)
-	r.Run()
+	router.InitRouter(r, app)
+	r.Run("0.0.0.0:8080")
 }

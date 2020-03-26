@@ -1,6 +1,11 @@
 package sender
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
 // Request TODO
 type Request struct {
@@ -20,5 +25,9 @@ type Feed struct {
 }
 
 func (feed *Feed) send() {
-	fmt.Print(feed.Req.URL)
+	fmt.Println("Send: " + feed.Req.URL)
+	jsonValue, _ := json.Marshal(feed.Req)
+	resp, err := http.Post(feed.Receiver, "application/json", bytes.NewBuffer(jsonValue))
+	fmt.Println(resp)
+	fmt.Println(err)
 }

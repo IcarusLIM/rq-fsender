@@ -7,18 +7,22 @@ import (
 
 // ApplicationContext TODO
 type ApplicationContext struct {
-	SC    chan sender.Feed
-	Tasks *task.TaskContainer
+	SC    chan *sender.Feed
+	Tasks *task.Container
 }
 
 // StartApplication TODO
 func StartApplication() (ctx *ApplicationContext, err error) {
-	threads := 10
-	sc := make(chan sender.Feed, 2*threads)
-	runner := &sender.Runner{SC: sc}
+	threads := 2
+	sc := make(chan *sender.Feed, 2*threads)
+	// start sender runner
+	runner := &sender.Runner{SC: &sc}
 	runner.Start(threads)
+	// init taskContainer
+	tasks := task.NewContainer()
 	ctx = &ApplicationContext{
-		SC: sc,
+		SC:    sc,
+		Tasks: tasks,
 	}
 	return
 }
