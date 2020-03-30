@@ -1,4 +1,4 @@
-package sender
+package task
 
 import (
 	"bytes"
@@ -22,12 +22,21 @@ type Request struct {
 type Feed struct {
 	Receiver string
 	Req      Request
+	counter  *Stats
 }
 
-func (feed *Feed) send() {
+// Send req
+func (feed *Feed) Send() {
 	fmt.Println("Send: " + feed.Req.URL)
 	jsonValue, _ := json.Marshal(feed.Req)
-	resp, err := http.Post(feed.Receiver, "application/json", bytes.NewBuffer(jsonValue))
-	fmt.Println(resp)
-	fmt.Println(err)
+	for i := 0; i < 3; i++ {
+		resp, err := http.Post(feed.Receiver, "application/json", bytes.NewBuffer(jsonValue))
+		if err == nil && resp.StatusCode == http.StatusOK {
+			feed.counter.OnSuccess()
+			fmt.Println(err.Error())
+			break
+		} else {
+			feed.counter.OnFail()
+		}
+	}
 }

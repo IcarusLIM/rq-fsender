@@ -1,16 +1,20 @@
 package task
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/Ghamster0/os-rq-fsender/conf"
+	"github.com/go-redis/redis/v7"
 )
 
 // PlainFile TODO
 type PlainFile interface {
 	Open() (VisableReader, error)
-	FileMeta() Result
+	GetInfo() Result
+	SetFlag(*Result)
 }
 
 // VisableReader TODO
@@ -38,7 +42,18 @@ func (f *OSFile) Size() (size int64, err error) {
 
 // LocalFile TODO
 type LocalFile struct {
-	Fid string
+	Fid    string
+	Meta   *LocalFileMete
+	status *Result
+}
+
+// LocalFileMete TODO
+type LocalFileMete struct {
+	Fid   string
+	Name  string
+	Ftype string
+	Size  int64
+	Time  string
 }
 
 // Open return io.Reader
@@ -51,20 +66,29 @@ func (lf *LocalFile) Open() (osf VisableReader, err error) {
 	return
 }
 
-// FileMeta TODO
-func (lf *LocalFile) FileMeta() Result {
+// GetInfo TODO
+func (lf *LocalFile) GetInfo() Result {
 	res := Result{
-		"fid": lf.Fid,
+		"fid":    lf.Fid,
+		"status": lf.status,
 	}
 	return res
 }
 
+// SetFlag TODO
+func (lf *LocalFile) SetFlag(r *Result) {
+	lf.status = r
+}
+
 // LocalFileLoader TODO
-func LocalFileLoader(fnames *[]string) []PlainFile {
+func LocalFileLoader(fnames *[]string, rclient *redis.Client) []PlainFile {
 	l := len(*fnames)
 	var files = make([]PlainFile, l)
 	for i := 0; i < l; i++ {
-		files[i] = &LocalFile{Fid: (*fnames)[i]}
+		var meta LocalFileMete
+		t := rclient.HGet(conf.FilesKey, (*fnames)[i]).Val()
+		json.Unmarshal([]byte(t), &meta)
+		files[i] = &LocalFile{Fid: (*fnames)[i], Meta: &meta}
 	}
 	return files
 }

@@ -18,7 +18,10 @@ func InitRouter(g gin.IRouter, ctx *ctx.ApplicationContext) {
 		F        controller.CtrlFunc
 	}{
 		{g.POST, "/upload", controller.Upload},
+		{g.GET, "/tasks", controller.ListTask},
 		{g.POST, "/task", controller.SendFromLocal},
+		{g.GET, "/task/:taskID", controller.TaskStatus},
+		{g.DELETE, "/task/:taskID", controller.CancelTask},
 	}
 
 	wp := &controller.HandlerWrapper{App: ctx}
