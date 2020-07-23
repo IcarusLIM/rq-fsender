@@ -1,0 +1,9 @@
+debug: true
+
+log:
+  level: "debug"
+
+http:
+  addr: "0.0.0.0:6789"
+  api:
+    path: "api"
