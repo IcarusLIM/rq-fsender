@@ -1,0 +1,13 @@
+version: "3"
+services:
+  sender:
+    image: docker-reg.sogou-inc.com/everything-agw/rq-fsender:latest
+    ports:
+      - "2020:2020"
+    volumes:
+      - /search/odin/docker/mounted_volume/fsender:/upload
+    networks:
+      net:
+
+networks:
+  net:

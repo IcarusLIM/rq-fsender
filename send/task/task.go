@@ -113,7 +113,6 @@ func (task *Task) update() {
 var SendError = errors.New("Server unavailable")
 
 func (task *Task) sendOne() error {
-	time.Sleep(time.Second)
 	line, err := task.guard.ReadLine()
 	line = strings.TrimSpace(line)
 	if len(line) > 0 {

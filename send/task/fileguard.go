@@ -64,7 +64,7 @@ func (guard *Guard) GuardClose(closeAt entity.FileStatus) {
 	if closeAt == entity.Finish {
 		if guard.meta.GetType() == "local" {
 			if err := deleteFileLocal(guard.meta.GetPath()); err != nil {
-				logger.Warning("Can't remove file: ")
+				logger.Warning("Can't remove file: ", guard.meta.GetPath())
 			}
 		}
 	}

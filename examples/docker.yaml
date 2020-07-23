@@ -1,0 +1,17 @@
+log:
+  level: "debug"
+
+http:
+  port: "2020"
+  api:
+    path: "api"
+
+db:
+  mysql:
+    host: "tcp(10.143.53.100:3306)"
+    user: "root"
+    password: "root"
+    dbname: "fsender"
+
+upload:
+  path: "/upload/"

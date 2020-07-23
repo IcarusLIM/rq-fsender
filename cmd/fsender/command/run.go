@@ -32,7 +32,7 @@ func run(conf *viper.Viper) {
 		lifecycle.Append(
 			fx.Hook{
 				OnStart: func(ctx context.Context) error {
-					go http.ListenAndServe("0.0.0.0:2111", engine)
+					go http.ListenAndServe("0.0.0.0:"+conf.GetString("http.port"), engine)
 					return nil
 				},
 			},
