@@ -1,0 +1,23 @@
+apiVersion: paas.sogou.com/v1
+kind: LogConfig
+metadata:
+  name: rq-fsender
+  namespace: search-databus
+  labels:
+    paas.sogou.com/app: rq-fsender
+spec:
+  selector:
+    paas.sogou.com/app: rq-fsender
+  mode: agent
+  logs:
+    - inputType: stdout
+      containerName: rq-fsender
+      encoding: utf-8
+      paths:
+        - "null"
+      fields:
+        kafkaTopic: default
+        logType: info
+      fieldsUnderRoot: true
+      tailFiles: false
+      closeRenamed: true

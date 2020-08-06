@@ -55,7 +55,7 @@ func run(conf *viper.Viper) {
 			logconf.ConfigLogger,
 			task.TaskBoxServe,
 			server.EnableCROS,
-			router.SendRouter,
+			router.FileRouter,
 			router.BatchRouter,
 			runServer,
 		),

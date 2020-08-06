@@ -15,3 +15,6 @@ db:
 
 upload:
   path: "/upload/"
+
+task:
+  concurrent: 10

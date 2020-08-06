@@ -27,13 +27,12 @@ func EnableCROS(r *gin.RouterGroup) {
 			c.Header("Access-Control-Allow-Origin", "*")
 			c.Header("Access-Control-Allow-Headers", "*")
 			c.Header("Access-Control-Allow-Methods", "*")
-			if c.Request.Method == http.MethodOptions {
-				c.Status(http.StatusNoContent)
-			} else {
-				c.Next()
-			}
+			c.Next()
 		},
 	)
+	r.OPTIONS("/*all", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusNoContent)
+	})
 }
 
 func NewRouterGroup(conf *viper.Viper, engine *gin.Engine) *gin.RouterGroup {

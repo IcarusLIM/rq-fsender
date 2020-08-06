@@ -12,4 +12,5 @@ var DefaultConfig = map[string]interface{}{
 	"db.mysql.password": "root",
 	"db.mysql.dbname":   "fsender",
 	"upload.path":       "./upload_files/",
+	"task.concurrent":   10,
 }

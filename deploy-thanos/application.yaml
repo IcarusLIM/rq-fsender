@@ -1,0 +1,14 @@
+apiVersion: paas.sogou.com/v1
+kind: Application
+metadata:
+  name: rq-fsender
+  namespace: search-databus
+  labels:
+    paas.sogou.com/app: rq-fsender
+spec:
+  selector:
+    paas.sogou.com/app: rq-fsender
+  directory: /xianzhi/sougou/sougoushiyebu/sousuoshiyebu/xitongjiagoubu/zhuaqufuwu/databus/platform
+  displayName: "FileSender"
+  description: "File sender deploy by guangwei@sogou-inc"
+  creator: "guangwei"

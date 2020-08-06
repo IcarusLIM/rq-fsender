@@ -2,14 +2,18 @@ package task
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/Ghamster0/os-rq-fsender/pkg/dto"
 	"github.com/Ghamster0/os-rq-fsender/pkg/hdfsfile"
 	"github.com/Ghamster0/os-rq-fsender/pkg/sth"
 	"github.com/Ghamster0/os-rq-fsender/send/entity"
-	"github.com/colinmarc/hdfs"
+	"github.com/colinmarc/hdfs/v2"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 )
@@ -31,8 +35,21 @@ func NewFileService(db *gorm.DB) *FileService {
 	}
 }
 
-func (fs *FileService) SaveFileHDFS() string {
-	return ""
+func (fs *FileService) SaveFileHDFS(path string, hdfsConf *dto.HDFSConfig) (r sth.Result, err error) {
+	pathArr := strings.Split(path, "/")
+	confStr, _ := json.Marshal(hdfsConf)
+	meta := map[string]interface{}{
+		"type":        "hdfs",
+		"path":        path,
+		"origin_name": pathArr[len(pathArr)-1],
+		"hdfs":        string(confStr),
+	}
+	var fr FileRef
+	if fr, err = openFileHDFS(path, hdfsConf); err == nil {
+		r, err = fs.saveFile(fr, meta)
+	}
+	fmt.Println("<< Save File HDFS")
+	return
 }
 
 func (fs *FileService) SaveFileLocal(path string, name string) (r sth.Result, err error) {
@@ -67,6 +84,7 @@ func (fs *FileService) saveFile(fr FileRef, meta map[string]interface{}) (r sth.
 		r["id"] = model.Id
 		r["size"] = model.Size
 	}
+	fr.Close()
 	return
 }
 
@@ -85,15 +103,27 @@ func (fs *FileService) ListFiles(start int, limit int) ([]sth.Result, error) {
 	}
 }
 
-func openFileHDFS(path string, host string) (fr FileRef, err error) {
-	var client *hdfs.Client
-	client, err = hdfs.New(host)
-	if err == nil {
-		var reader *hdfs.FileReader
-		reader, err = client.Open(path)
-		if err == nil {
-			fr = &hdfsfile.WrappedFileReader{FileReader: reader}
+func openFileHDFS(path string, hdfsConf *dto.HDFSConfig) (fr FileRef, err error) {
+	err = errors.New("Empty NameNodes")
+	for _, nameNode := range hdfsConf.NameNodes {
+		fmt.Println("try conn")
+		clientOptions := hdfs.ClientOptions{
+			Addresses: []string{nameNode},
+			User:      hdfsConf.User,
 		}
+		var client *hdfs.Client
+		client, err = hdfs.NewClient(clientOptions)
+		if err != nil {
+			continue
+		}
+		var f *hdfs.FileReader
+		f, err = client.Open(path)
+		if err != nil {
+			client.Close()
+			continue
+		}
+		fr = &hdfsfile.WrappedFileReader{FileReader: f, Client: client}
+		return
 	}
 	return
 }

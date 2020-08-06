@@ -1,0 +1,7 @@
+apiVersion: paas.sogou.com/v1
+kind: DNS
+metadata:
+  name: rq-fsender
+  namespace: search-databus
+spec:
+  recordName: "sender.pods.databus.thanos"

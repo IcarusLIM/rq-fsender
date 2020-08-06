@@ -1,0 +1,21 @@
+apiVersion: paas.sogou.com/v1
+kind: Registration
+metadata:
+  name: rq-fsender
+  namespace: search-databus
+  labels:
+    paas.sogou.com/app: rq-fsender
+spec:
+  selector:
+    paas.sogou.com/app: rq-fsender
+  actions:
+    - serverName: nginxregister
+      attributes:
+        - key: path
+          value: /
+        - key: port
+          value: "2020"
+        - key: domain
+          value: "sender.databus.thanos.sogou"
+        - key: group
+          value: default

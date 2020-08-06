@@ -9,26 +9,30 @@ import (
 	"github.com/Ghamster0/os-rq-fsender/pkg/sth"
 	"github.com/jinzhu/gorm"
 	"github.com/op/go-logging"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
 var logger, _ = logging.GetLogger("TASK")
 
 type TaskBox struct {
-	db       *gorm.DB
-	stop     chan int
-	removing chan string
-	tasks    map[string]*Task
-	loc      *sync.RWMutex
+	db         *gorm.DB
+	stop       chan int
+	removing   chan string
+	tasks      map[string]*Task
+	loc        *sync.RWMutex
+	concurrent int
 }
 
-func NewTaskBox(db *gorm.DB) *TaskBox {
+func NewTaskBox(db *gorm.DB, conf *viper.Viper) *TaskBox {
+	concurr := conf.GetInt("task.concurrent")
 	return &TaskBox{
-		db:       db,
-		stop:     make(chan int),
-		removing: make(chan string, 5),
-		tasks:    make(map[string]*Task),
-		loc:      &sync.RWMutex{},
+		db:         db,
+		stop:       make(chan int),
+		removing:   make(chan string, concurr),
+		tasks:      make(map[string]*Task),
+		loc:        &sync.RWMutex{},
+		concurrent: concurr,
 	}
 }
 
@@ -66,7 +70,7 @@ loop:
 }
 
 func (box *TaskBox) createTask() {
-	if len(box.tasks) > 1 {
+	if len(box.tasks) >= box.concurrent {
 		return
 	}
 	if task, err := NewTask(box.removing, box.db); err == nil {
@@ -118,6 +122,30 @@ func (box *TaskBox) waitTasksExit() {
 func (box *TaskBox) InfoTask(key string) (sth.Result, error) {
 	task, b := box.tasks[key]
 	if b {
+		return task.Info()
+	} else {
+		return nil, errors.New("")
+	}
+}
+
+func (box *TaskBox) PauseTask(key string) error {
+	box.loc.Lock()
+	defer box.loc.Unlock()
+	task, b := box.tasks[key]
+	if b {
+		task.Pause()
+		return nil
+	} else {
+		return errors.New("")
+	}
+}
+
+func (box *TaskBox) CancelTask(key string) (sth.Result, error) {
+	box.loc.Lock()
+	defer box.loc.Unlock()
+	task, b := box.tasks[key]
+	if b {
+		task.Cancel()
 		return task.Info()
 	} else {
 		return nil, errors.New("")

@@ -3,8 +3,10 @@ package task
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
 
+	"github.com/Ghamster0/os-rq-fsender/pkg/dto"
 	"github.com/Ghamster0/os-rq-fsender/pkg/sth"
 	"github.com/Ghamster0/os-rq-fsender/send/entity"
 	"github.com/jinzhu/gorm"
@@ -32,7 +34,12 @@ func GuardOpen(fid string, db *gorm.DB) (g *Guard, success int, fail int, err er
 		if t := fileMeta["type"].(string); t == "local" {
 			fileRef, err = openFileLocal(fileMeta["path"].(string))
 		} else {
-			fileRef, err = openFileHDFS(fileMeta["path"].(string), fileMeta["host"].(string))
+			var hdfsConf *dto.HDFSConfig = &dto.HDFSConfig{}
+			if err = json.Unmarshal([]byte(fileMeta["hdfs"].(string)), hdfsConf); err != nil {
+				logger.Error(err)
+			}
+			fileRef, err = openFileHDFS(fileMeta["path"].(string), hdfsConf)
+			fmt.Println("Guard Opend HDFS")
 		}
 		if err == nil {
 			success = fileModel.Success

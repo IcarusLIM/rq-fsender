@@ -89,3 +89,50 @@ func (bs *BatchService) GetBatch(id string) (sth.Result, error) {
 		"infos":      taskInfos,
 	}, nil
 }
+
+func (bs *BatchService) DelBatch(id string) (sth.Result, error) {
+	_, fms, err := bs.GetBatchFiles(id)
+	if err != nil {
+		return nil, err
+	}
+	var taskInfos []sth.Result
+	for _, fm := range *fms {
+		info, err := bs.box.CancelTask(fm.Id)
+		if err != nil {
+			info, err = fm.Info()
+		}
+		if err == nil {
+			taskInfos = append(taskInfos, info)
+		}
+	}
+	bs.DelBatchFiles(id)
+	return sth.Result{
+		"infos": taskInfos,
+	}, nil
+}
+
+func (bs *BatchService) GetBatchFiles(id string) (*entity.BatchModel, *[]entity.FileModel, error) {
+	var model entity.BatchModel
+	if err := bs.db.Where("id = ?", id).First(&model).Error; err != nil {
+		return nil, nil, err
+	}
+	var fms []entity.FileModel
+	if err := bs.db.Where("batch_id = ?", id).Find(&fms).Error; err != nil {
+		return &model, nil, err
+	}
+	return &model, &fms, nil
+}
+
+func (bs *BatchService) DelBatchFiles(id string) error {
+	err := bs.db.Transaction(
+		func(tx *gorm.DB) error {
+			if err := tx.Where("id = ?", id).Delete(entity.BatchModel{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Where("batch_id = ?", id).Delete(entity.FileModel{}).Error; err != nil {
+				return err
+			}
+			return nil
+		})
+	return err
+}

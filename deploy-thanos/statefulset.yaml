@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rq-fsender
+  namespace: search-databus
+  labels:
+    paas.sogou.com/app: rq-fsender
+spec:
+  replicas: 1
+  revisionHistoryLimit: 25
+  serviceName: rq-fsender
+  selector:
+    matchLabels:
+      paas.sogou.com/app: rq-fsender
+  template:
+    metadata:
+      labels:
+        paas.sogou.com/app: rq-fsender
+    spec:
+      containers:
+        - image: docker-reg.sogou-inc.com/everything-agw/rq-fsender:latest
+          imagePullPolicy: IfNotPresent
+          name: rq-fsender
+          ports:
+            - containerPort: 2020
+              name: http-port
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: file-store
+              mountPath: /upload
+      dnsPolicy: Default
+      readinessGates:
+        - conditionType: paas.sogou.com/registration
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: file-store
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "search-databus-ceph"
+        resources:
+          requests:
+            storage: 5Gi

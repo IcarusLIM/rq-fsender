@@ -2,7 +2,7 @@ log:
   level: "debug"
 
 http:
-  port: "2020"
+  port: "2021"
   api:
     path: "api"
 
@@ -11,7 +11,10 @@ db:
     host: "tcp(127.0.0.1:3306)"
     user: "root"
     password: "root"
-    dbname: "fsender"
+    dbname: "fsender2"
 
 upload:
   path: "./upload_files/"
+
+task:
+  concurrent: 10

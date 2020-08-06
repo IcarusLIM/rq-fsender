@@ -58,3 +58,11 @@ func (ctl *BatchController) GetBatch(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"res": false, "err": err.Error()})
 	}
 }
+
+func (ctl *BatchController) DelBatch(c *gin.Context) {
+	if res, err := ctl.bs.DelBatch(c.Param("id")); err == nil {
+		c.JSON(http.StatusOK, gin.H{"res": true, "data": res})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"res": false, "err": err.Error()})
+	}
+}

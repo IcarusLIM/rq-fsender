@@ -66,6 +66,10 @@ func (task *Task) Cancel() {
 	task.stop <- 1
 }
 
+func (task *Task) Pause() {
+	task.stop <- 2
+}
+
 func (task *Task) Info() (info sth.Result, err error) {
 	if info, err = task.guard.Info(); err == nil {
 		info["success"] = task.success
@@ -82,8 +86,10 @@ loop:
 		case code := <-task.stop:
 			if code == 0 {
 				stopAt = entity.Waitting
-			} else {
+			} else if code == 1 {
 				stopAt = entity.Cancel
+			} else {
+				stopAt = entity.Paused
 			}
 			break loop
 		default:

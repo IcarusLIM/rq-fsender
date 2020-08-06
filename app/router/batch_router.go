@@ -10,4 +10,5 @@ func BatchRouter(root *gin.RouterGroup, ctl *controller.BatchController) {
 	g.POST("", ctl.CreateBatch)
 	g.GET("", ctl.ListBatch)
 	g.GET("/:id", ctl.GetBatch)
+	g.DELETE("/:id", ctl.DelBatch)
 }
