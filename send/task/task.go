@@ -100,7 +100,7 @@ loop:
 			if err := task.sendOne(); err != nil {
 				if err == io.EOF {
 					stopAt = entity.Finish
-				} else if err == SendError {
+				} else if err == ErrSend {
 					stopAt = entity.Fail
 				}
 				break loop
@@ -116,7 +116,8 @@ func (task *Task) update() {
 	task.guard.Update(task.success, task.fail)
 }
 
-var SendError = errors.New("Server unavailable")
+// ErrSend TODO
+var ErrSend = errors.New("Server unavailable")
 
 func (task *Task) sendOne() error {
 	line, err := task.guard.ReadLine()
@@ -125,20 +126,20 @@ func (task *Task) sendOne() error {
 		jsonValue, _ := json.Marshal(map[string]interface{}{"url": line})
 		for i := 0; i < 3; i++ {
 			resp, err := http.Post(task.target, "application/json", bytes.NewBuffer(jsonValue))
-			if err == nil {
-				logger.Debug("Send", line, resp.StatusCode)
-				if resp.StatusCode == http.StatusOK {
-					task.success += 1
-				} else if resp.StatusCode == http.StatusBadRequest {
-					task.fail += 1
-				}
-				return err
-			} else {
+			if err != nil {
 				time.Sleep(time.Second)
 				continue
 			}
+			defer resp.Body.Close()
+			logger.Debug("Send", line, resp.StatusCode)
+			if resp.StatusCode == http.StatusOK {
+				task.success++
+			} else if resp.StatusCode == http.StatusBadRequest {
+				task.fail++
+			}
+			return err
 		}
-		return SendError
+		return ErrSend
 	}
 	return err
 }
