@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"io"
 	"net/http"
+	"os"
 
 	"github.com/Ghamster0/os-rq-fsender/pkg/dto"
 	"github.com/Ghamster0/os-rq-fsender/pkg/sth"
@@ -33,7 +35,7 @@ func (ctl *FileController) Upload(c *gin.Context) {
 	file, _ := c.FormFile("file")
 	originName := file.Filename
 	name := "upload_" + uuid.NewV4().String()
-	filePath := ctl.conf.GetString("upload.path") + name
+	filePath := ctl.conf.GetString("upload.file") + name
 	c.SaveUploadedFile(file, filePath)
 	res, err := ctl.fileService.SaveFileLocal(filePath, originName)
 	if err != nil {
@@ -78,5 +80,20 @@ func (ctl *FileController) Resume(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"res": false, "err": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"res": true})
+	}
+}
+
+func (ctl *FileController) GetLog(c *gin.Context) {
+	filePath := ctl.conf.GetString("upload.log") + c.Param("id") + ".log"
+	if file, err := os.Open(filePath); err == nil {
+		defer file.Close()
+
+		c.Writer.Header().Add("Content-type", "application/octet-stream")
+		c.Writer.Header().Add("Content-Disposition", "attachment; filename=\"upload.log\"")
+		if _, err = io.Copy(c.Writer, file); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"err": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"err": err.Error()})
 	}
 }

@@ -8,13 +8,16 @@ http:
 
 db:
   mysql:
-    host: "tcp(127.0.0.1:3306)"
+    host: "tcp(10.143.15.226:3306)"
     user: "root"
     password: "root"
     dbname: "fsender2"
 
 upload:
-  path: "./upload_files/"
+  file: "./upload/files/"
+  log: "./upload/logs/"
 
 task:
   concurrent: 10
+  conf:
+    concurrent: 100

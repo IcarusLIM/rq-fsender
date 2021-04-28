@@ -25,11 +25,12 @@ type FileModel struct {
 	FileMeta  string
 	Size      int64
 	Offset    int64
-	Success   int
-	Fail      int
+	Success   int32
+	Fail      int32
 	Status    FileStatus
 	Err       string
 	CreatedAt time.Time
+	UpdateAt  time.Time
 }
 
 type FileMeta map[string]interface{}

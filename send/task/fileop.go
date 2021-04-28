@@ -3,7 +3,6 @@ package task
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -48,7 +47,6 @@ func (fs *FileService) SaveFileHDFS(path string, hdfsConf *dto.HDFSConfig) (r st
 	if fr, err = openFileHDFS(path, hdfsConf); err == nil {
 		r, err = fs.saveFile(fr, meta)
 	}
-	fmt.Println("<< Save File HDFS")
 	return
 }
 
@@ -78,6 +76,7 @@ func (fs *FileService) saveFile(fr FileRef, meta map[string]interface{}) (r sth.
 			Fail:      0,
 			Status:    entity.Idel,
 			CreatedAt: time.Now(),
+			UpdateAt:  time.Now(),
 		}
 		fs.db.Save(model)
 		r = meta
@@ -106,7 +105,6 @@ func (fs *FileService) ListFiles(start int, limit int) ([]sth.Result, error) {
 func openFileHDFS(path string, hdfsConf *dto.HDFSConfig) (fr FileRef, err error) {
 	err = errors.New("Empty NameNodes")
 	for _, nameNode := range hdfsConf.NameNodes {
-		fmt.Println("try conn")
 		clientOptions := hdfs.ClientOptions{
 			Addresses: []string{nameNode},
 			User:      hdfsConf.User,

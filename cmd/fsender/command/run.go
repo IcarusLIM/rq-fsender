@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/Ghamster0/os-rq-fsender/app/controller"
 	"github.com/Ghamster0/os-rq-fsender/app/router"
@@ -39,6 +40,23 @@ func run(conf *viper.Viper) {
 		)
 	}
 
+	initDirs := func(lifecycle fx.Lifecycle, conf *viper.Viper) {
+		ensureDir := func(p string) {
+			if _, err := os.Stat(p); os.IsNotExist(err) {
+				os.Mkdir(p, os.ModePerm)
+			}
+		}
+		lifecycle.Append(
+			fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					ensureDir(conf.GetString("upload.file"))
+					ensureDir(conf.GetString("upload.log"))
+					return nil
+				},
+			},
+		)
+	}
+
 	app := fx.New(
 		fx.Provide(
 			newConfig,
@@ -50,8 +68,11 @@ func run(conf *viper.Viper) {
 			task.NewTaskBox,
 			task.NewFileService,
 			task.NewBatchService,
+			task.NewCleanService,
 		),
 		fx.Invoke(
+			initDirs,
+			task.CleanServiceServ,
 			logconf.ConfigLogger,
 			task.TaskBoxServe,
 			server.EnableCROS,

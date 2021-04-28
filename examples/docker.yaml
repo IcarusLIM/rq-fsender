@@ -1,5 +1,5 @@
 log:
-  level: "debug"
+  level: "info"
 
 http:
   port: "2020"
@@ -8,13 +8,16 @@ http:
 
 db:
   mysql:
-    host: "tcp(databus.websac.rds.sogou:3306)"
-    user: "databus"
-    password: "databus00000"
+    host: "tcp(10.143.15.226:3306)"
+    user: "root"
+    password: "root"
     dbname: "fsender"
 
 upload:
-  path: "/upload/"
+  file: "/upload/file/"
+  log: "/upload/log/"
 
 task:
   concurrent: 10
+  conf:
+    concurrent: 100

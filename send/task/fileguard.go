@@ -3,59 +3,45 @@ package task
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
+	"sync"
 
 	"github.com/Ghamster0/os-rq-fsender/pkg/dto"
-	"github.com/Ghamster0/os-rq-fsender/pkg/sth"
 	"github.com/Ghamster0/os-rq-fsender/send/entity"
 	"github.com/jinzhu/gorm"
 )
 
 type Guard struct {
-	id     string
 	db     *gorm.DB
-	model  *entity.FileModel
 	meta   entity.FileMeta
 	fr     FileRef
 	reader *bufio.Reader
 	offset int64
+	lock   *sync.RWMutex
 }
 
 // not thread safe
-func GuardOpen(fid string, db *gorm.DB) (g *Guard, success int, fail int, err error) {
-	var fileModel entity.FileModel
-	var fileMeta entity.FileMeta
-
-	db.Where("id = ?", fid).First(&fileModel)
-	err = json.Unmarshal([]byte(fileModel.FileMeta), &fileMeta)
-	if err == nil {
-		var fileRef FileRef
-		if t := fileMeta["type"].(string); t == "local" {
-			fileRef, err = openFileLocal(fileMeta["path"].(string))
-		} else {
-			var hdfsConf *dto.HDFSConfig = &dto.HDFSConfig{}
-			if err = json.Unmarshal([]byte(fileMeta["hdfs"].(string)), hdfsConf); err != nil {
-				logger.Error(err)
-			}
-			fileRef, err = openFileHDFS(fileMeta["path"].(string), hdfsConf)
-			fmt.Println("Guard Opend HDFS")
+func GuardOpen(fileMeta entity.FileMeta, offset int64, db *gorm.DB) (g *Guard, err error) {
+	var fileRef FileRef
+	if t := fileMeta["type"].(string); t == "local" {
+		fileRef, err = openFileLocal(fileMeta["path"].(string))
+	} else {
+		var hdfsConf *dto.HDFSConfig = &dto.HDFSConfig{}
+		if err = json.Unmarshal([]byte(fileMeta["hdfs"].(string)), hdfsConf); err != nil {
+			logger.Error(err)
 		}
-		if err == nil {
-			success = fileModel.Success
-			fail = fileModel.Fail
-			offset := fileModel.Offset
-			fileRef.Seek(offset, os.SEEK_SET)
-			reader := bufio.NewReader(fileRef)
-			g = &Guard{
-				id:     fid,
-				db:     db,
-				model:  &fileModel,
-				meta:   fileMeta,
-				fr:     fileRef,
-				reader: reader,
-				offset: offset,
-			}
+		fileRef, err = openFileHDFS(fileMeta["path"].(string), hdfsConf)
+	}
+	if err == nil {
+		fileRef.Seek(offset, os.SEEK_SET)
+		reader := bufio.NewReader(fileRef)
+		g = &Guard{
+			db:     db,
+			meta:   fileMeta,
+			fr:     fileRef,
+			reader: reader,
+			offset: offset,
+			lock:   &sync.RWMutex{},
 		}
 	}
 	return
@@ -63,10 +49,6 @@ func GuardOpen(fid string, db *gorm.DB) (g *Guard, success int, fail int, err er
 
 func (guard *Guard) GuardClose(closeAt entity.FileStatus) {
 	guard.fr.Close()
-	meta, _ := guard.Info()
-	logger.Info("File", meta["path"], "close - at", closeAt)
-	guard.db.Model(guard.model).Updates(entity.FileModel{Status: closeAt})
-
 	// On finish, remove file
 	if closeAt == entity.Finish {
 		if guard.meta.GetType() == "local" {
@@ -78,23 +60,17 @@ func (guard *Guard) GuardClose(closeAt entity.FileStatus) {
 }
 
 func (guard *Guard) ReadLine() (string, error) {
+	guard.lock.Lock()
+	defer guard.lock.Unlock()
 	line, err := guard.reader.ReadBytes('\n')
 	guard.offset += int64(len(line))
 	return string(line), err
-}
-
-func (guard *Guard) Update(success int, fail int) {
-	guard.db.Model(guard.model).Updates(entity.FileModel{Success: success, Fail: fail, Offset: guard.offset})
 }
 
 func (guard *Guard) Cancel() {
 	guard.GuardClose(entity.Cancel)
 }
 
-func (guard *Guard) Info() (meta sth.Result, err error) {
-	if meta, err = guard.model.Info(); err == nil {
-		meta["offset"] = guard.offset
-		meta["size"] = guard.model.Size
-	}
-	return
+func (guard *Guard) GuardOffset() int64 {
+	return guard.offset
 }

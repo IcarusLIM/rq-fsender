@@ -18,7 +18,7 @@ spec:
         paas.sogou.com/app: rq-fsender
     spec:
       containers:
-        - image: docker-reg.sogou-inc.com/everything-agw/rq-fsender:latest
+        - image: docker-reg.sogou-inc.com/databus/rq-fsender:dd870fc
           imagePullPolicy: IfNotPresent
           name: rq-fsender
           ports:

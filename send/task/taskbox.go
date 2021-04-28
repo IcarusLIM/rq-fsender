@@ -17,7 +17,8 @@ var logger, _ = logging.GetLogger("TASK")
 
 type TaskBox struct {
 	db         *gorm.DB
-	stop       chan int
+	conf       *viper.Viper
+	stop       chan int // must be blocking channel
 	removing   chan string
 	tasks      map[string]*Task
 	loc        *sync.RWMutex
@@ -28,6 +29,7 @@ func NewTaskBox(db *gorm.DB, conf *viper.Viper) *TaskBox {
 	concurr := conf.GetInt("task.concurrent")
 	return &TaskBox{
 		db:         db,
+		conf:       conf,
 		stop:       make(chan int),
 		removing:   make(chan string, concurr),
 		tasks:      make(map[string]*Task),
@@ -59,10 +61,11 @@ func (box *TaskBox) run() {
 loop:
 	for {
 		logger.Debug("Tasks running - ", len(box.tasks))
-		box.createTask()
-		box.cleanTask()
 		select {
 		case <-time.After(time.Second):
+			box.createTask()
+		case id := <-box.removing:
+			box.cleanTask(id)
 		case <-box.stop:
 			break loop
 		}
@@ -70,26 +73,22 @@ loop:
 }
 
 func (box *TaskBox) createTask() {
+	box.loc.Lock()
+	defer box.loc.Unlock()
 	if len(box.tasks) >= box.concurrent {
 		return
 	}
-	if task, err := NewTask(box.removing, box.db); err == nil {
-		box.loc.Lock()
-		defer box.loc.Unlock()
+	if task, err := NewTask(box.removing, box.db, box.conf); err == nil {
 		if err := task.Run(); err == nil {
 			box.tasks[task.Id] = task
 		}
 	}
 }
 
-func (box *TaskBox) cleanTask() {
+func (box *TaskBox) cleanTask(id string) {
 	box.loc.Lock()
 	defer box.loc.Unlock()
-	select {
-	case id := <-box.removing:
-		delete(box.tasks, id)
-	default:
-	}
+	delete(box.tasks, id)
 }
 
 func (box *TaskBox) OnStop() {
@@ -111,9 +110,10 @@ func (box *TaskBox) waitTasksExit() {
 			select {
 			case id := <-box.removing:
 				delete(box.tasks, id)
-				if len(box.tasks) == 0 {
-					return
-				}
+			case <-time.After(time.Second):
+			}
+			if len(box.tasks) == 0 {
+				break
 			}
 		}
 	}

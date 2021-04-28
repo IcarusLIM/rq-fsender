@@ -10,6 +10,7 @@ func FileRouter(root *gin.RouterGroup, ctl *controller.FileController) {
 	g.POST("/upload", ctl.Upload)
 	g.POST("/upload-hdfs", ctl.UploadHDFS)
 	g.GET("", ctl.List)
+	g.GET("/:id/log", ctl.GetLog)
 	g.PUT("/:id/pause", ctl.Pause)
 	g.PUT("/:id/resume", ctl.Resume)
 }
